@@ -63,7 +63,7 @@ docker run --gpus all -p 8000:8000 -v ${PWD}/data:/app/data -v ${PWD}/outputs:/a
 
 ### 3. Access the Web Interface
 
-Open your browser and navigate to: http://localhost:8000
+Open your browser and navigate to: http://localhost:8000 or http://127.0.0.1:8000/
 
 ### CLI Execution Instructions
 Per the technical requirements, all modules can be executed independently via Command Line Interface (CLI) inside the Docker container.
