@@ -52,8 +52,9 @@ Linux / Mac:
 
 ```bash
 docker run --gpus all -p 8000:8000 -v $(pwd)/data:/app/data -v $(pwd)/outputs:/app/outputs histoscan-ai
-Windows (PowerShell):
 ```
+Windows (PowerShell):
+
 ```bash
 PowerShell
 docker run --gpus all -p 8000:8000 -v ${PWD}/data:/app/data -v ${PWD}/outputs:/app/outputs histoscan-ai
