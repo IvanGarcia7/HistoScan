@@ -1,0 +1,6 @@
+{
+    "best_val_iou": 0.6910789847373963,
+    "final_train_loss": 0.2299604296684265,
+    "epochs_trained": 29,
+    "architecture": "finetune"
+}
