@@ -23,6 +23,19 @@
 
 ---
 
+## 📥 Pre-trained Models
+
+To test the Inference Engine (Module C) immediately without training from scratch, a pre-trained model checkpoint is provided:
+
+> **[Download Pre-trained U-Net Model (.ckpt)](https://drive.google.com/file/d/1km2j2CMwT7TO7iVYibBjhTPrdkHLZ_zL/view?usp=sharing)**
+
+**Setup Instructions:**
+1. Download the `.ckpt` file from the link above.
+2. Place it in the `outputs/` folder (e.g., `outputs/best_model.ckpt`).
+3. Update the CLI commands to point to this path (e.g., `--ckpt /app/outputs/best_model.ckpt`).
+
+---
+
 ## 🚀 Quick Start (Docker)
 
 The application is containerized to ensure it runs correctly on any system.
