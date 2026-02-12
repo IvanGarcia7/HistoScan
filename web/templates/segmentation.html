@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Segmentation Lab | HistoScan AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="/static/style.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { padding-top: 80px; }
+        .folder-item { cursor: pointer; transition: background 0.2s; }
+        .folder-item:hover { background-color: #f8f9fa; }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar py-3 bg-white border-bottom shadow-sm fixed-top">
+    <div class="container">
+        <a href="/" class="text-decoration-none">
+            <span class="navbar-brand d-flex align-items-center">
+                <i class="bi bi-layers-half text-success me-2 fs-4"></i>
+                <span class="fw-bold text-dark tracking-tight">HISTO<span class="text-success">SCAN</span></span>
+                <span class="badge bg-success bg-opacity-10 text-success ms-2 border border-success" style="font-size: 0.7rem;">AI ENGINE</span>
+            </span>
+        </a>
+        <div class="d-flex gap-4">
+            <a href="/" class="text-decoration-none text-secondary hover-text-success pb-1 transition">
+                <i class="bi bi-grid-3x3 me-1"></i> WSI Analysis
+            </a>
+            <a href="/segmentation" class="text-decoration-none fw-bold text-success border-bottom border-2 border-success pb-1">
+                <i class="bi bi-cpu me-1"></i> Segmentation (DL)
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="fw-bold text-dark">Deep Learning Segmentation Module</h3>
+            <p class="text-muted">Train U-Net models and run inference on tissue samples.</p>
+        </div>
+    </div>
+
+    <ul class="nav nav-pills mb-4 bg-white p-2 rounded shadow-sm d-inline-flex" id="mainTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-pill px-4" id="train-tab" data-bs-toggle="tab" data-bs-target="#train-pane" type="button" role="tab">
+                <i class="bi bi-rocket-takeoff me-2"></i>Training Lab
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-4" id="infer-tab" data-bs-toggle="tab" data-bs-target="#infer-pane" type="button" role="tab">
+                <i class="bi bi-magic me-2"></i>Inference Studio
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-4 text-warning" id="wsi-tab" data-bs-toggle="tab" data-bs-target="#wsi-pane" type="button" role="tab">
+                <i class="bi bi-layers-fill me-2"></i>WSI Lab (Pro)
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="mainTabsContent">
+        
+        <div class="tab-pane fade show active" id="train-pane" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="panel h-100">
+                        <h6 class="fw-bold text-uppercase text-muted small mb-3">Dataset Config</h6>
+                        <form id="trainForm">
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">TRAIN DATA DIR</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" name="train_path" id="trainPathInput" class="form-control font-monospace bg-light" value="{{ default_train }}" required readonly>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="openBrowser('trainPathInput')">
+                                        <i class="bi bi-folder2-open"></i> Browse
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label small fw-bold">VAL DATA DIR</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" name="val_path" id="valPathInput" class="form-control font-monospace bg-light" value="{{ default_val }}" required readonly>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="openBrowser('valPathInput')">
+                                        <i class="bi bi-folder2-open"></i> Browse
+                                    </button>
+                                </div>
+                            </div>
+
+                            <h6 class="fw-bold text-uppercase text-muted small mb-3 border-top pt-3">Model Configuration</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">ARCHITECTURE</label>
+                                <select name="model_arch" class="form-select">
+                                    <option value="unet" selected>Standard U-Net (ResNet34)</option>
+                                    <option value="custom">Custom U-Net++ (ResNet34)</option>
+                                    <option value="finetune">Heavy Finetune (ResNet50)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">SAVE AS (.ckpt)</label>
+                                <input type="text" name="model_name" class="form-control font-monospace" value="my_model_v1.ckpt" required>
+                            </div>
+
+                            <h6 class="fw-bold text-uppercase text-muted small mb-3 border-top pt-3">Hyperparameters</h6>
+                            
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold">EPOCHS</label>
+                                    <input type="number" name="epochs" class="form-control" value="50" min="1" max="1000">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold">BATCH SIZE</label>
+                                    <input type="number" name="batch_size" class="form-control" value="8" min="1" max="64">
+                                    <div class="form-text" style="font-size: 0.65rem;">Lower if OOM error.</div>
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label small fw-bold text-danger">PATIENCE</label>
+                                    <input type="number" name="patience" class="form-control" value="10" min="1" max="50">
+                                    <div class="form-text" style="font-size: 0.6rem;">Stop if no impr.</div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary-med w-100 py-2" id="btnTrain">
+                                <i class="bi bi-play-fill me-1"></i> Start Training
+                            </button>
+                        </form>
+                        
+                        <div class="mt-4 p-3 bg-dark text-white rounded d-none shadow" id="trainStatusBox">
+                            <div class="d-flex justify-content-between small text-white-50 mb-1">
+                                <span>CURRENT EPOCH</span>
+                                <span class="font-monospace text-white fw-bold" id="epochVal">0</span>
+                            </div>
+                            <div class="progress mb-3" style="height: 6px;">
+                                <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+                            </div>
+                            <div class="row text-center mt-2">
+                                <div class="col-4 border-end border-secondary">
+                                    <small class="d-block text-white-50" style="font-size: 0.6rem;">LOSS</small>
+                                    <span class="fw-bold font-monospace text-danger" id="lossVal">-</span>
+                                </div>
+                                <div class="col-4 border-end border-secondary">
+                                    <small class="d-block text-white-50" style="font-size: 0.6rem;">DICE</small>
+                                    <span class="fw-bold font-monospace text-info" id="diceVal">-</span>
+                                </div>
+                                <div class="col-4">
+                                    <small class="d-block text-white-50" style="font-size: 0.6rem;">IoU</small>
+                                    <span class="fw-bold font-monospace text-success" id="iouVal">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="panel h-100 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold text-uppercase text-muted small m-0">Training Metrics</h6>
+                            <span class="badge bg-light text-secondary border">Live Update</span>
+                        </div>
+                        <div style="flex-grow: 1; min-height: 400px; position: relative;">
+                            <canvas id="metricsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="infer-pane" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="panel mb-3 bg-white border-primary border-opacity-25">
+                        <h6 class="fw-bold text-uppercase text-primary small mb-2">
+                            <i class="bi bi-cloud-upload me-2"></i>Import Model
+                        </h6>
+                        <form id="uploadModelForm" class="d-flex gap-2 align-items-center">
+                            <input type="file" name="file" class="form-control form-control-sm" accept=".ckpt" required>
+                            <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+                        </form>
+                        <div class="form-text small mt-1">Upload a .ckpt file to add it to the list.</div>
+                    </div>
+
+                    <div class="panel">
+                        <h6 class="fw-bold text-uppercase text-muted small mb-3">Inference Config</h6>
+                        <form id="inferForm">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">SELECT CHECKPOINT</label>
+                                <select name="ckpt" class="form-select font-monospace small">
+                                    {% for ckpt in checkpoints %}
+                                    <option value="{{ ckpt }}">{{ ckpt }}</option>
+                                    {% else %}
+                                    <option disabled selected>No models available. Train or Upload one.</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label small fw-bold">INPUT IMAGE (TILE)</label>
+                                <input type="file" name="file" class="form-control" required>
+                            </div>
+                            <button type="submit" class="btn btn-dark w-100 py-2">
+                                <i class="bi bi-lightning-charge-fill me-1"></i> Run Segmentation
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="panel text-center min-vh-50 d-flex flex-column justify-content-center align-items-center" id="inferPlaceholder">
+                        <i class="bi bi-images display-1 text-muted opacity-25 mb-3"></i>
+                        <h5 class="text-muted">Upload an image to visualize the mask</h5>
+                    </div>
+
+                    <div class="panel d-none" id="inferResult">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold text-uppercase text-muted small m-0">Prediction Result</h6>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="window.location.reload()">Clear</button>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="p-2 border rounded bg-white text-center">
+                                    <small class="d-block text-muted mb-2 fw-bold">Original Input</small>
+                                    <img id="imgOriginal" class="img-fluid rounded border" style="max-height: 300px;">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-2 border rounded bg-white text-center">
+                                    <small class="d-block text-muted mb-2 fw-bold">Predicted Mask</small>
+                                    <img id="imgMask" class="img-fluid rounded border" style="max-height: 300px; image-rendering: pixelated;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="wsi-pane" role="tabpanel">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="panel border-warning border-opacity-25 bg-white shadow-sm">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-warning text-dark rounded-circle p-2 me-2"><i class="bi bi-stars"></i></div>
+                            <h6 class="fw-bold text-uppercase text-warning m-0">WSI Inference Lab</h6>
+                        </div>
+                        <p class="small text-muted mb-4">
+                            Deep Learning analysis on Whole Slide Images with stitching and tissue detection.
+                        </p>
+
+                        <form id="wsiInferForm" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">1. WSI FILE</label>
+                                
+                                <div class="input-group mb-2">
+                                    <span class="input-group-text bg-light"><i class="bi bi-upload"></i></span>
+                                    <input type="file" name="file" class="form-control form-control-sm" accept=".tiff,.tif,.svs">
+                                </div>
+                                
+                                <div class="text-center small text-muted mb-2 fw-bold">- OR -</div>
+                                
+                                <select name="wsi_file" class="form-select font-monospace small">
+                                    <option value="" selected disabled>Select uploaded file...</option>
+                                    {% for slide in slides %}
+                                    <option value="{{ slide }}">{{ slide }}</option>
+                                    {% else %}
+                                    <option disabled>No slides found</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">2. TRAINED MODEL</label>
+                                <select name="ckpt_file" class="form-select font-monospace small">
+                                    {% for ckpt in checkpoints %}
+                                    <option value="{{ ckpt }}">{{ ckpt }}</option>
+                                    {% else %}
+                                    <option disabled>No models found</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="p-3 bg-white border rounded mb-3">
+                                <h6 class="small fw-bold text-dark border-bottom pb-2 mb-3">Grid Configuration</h6>
+                                
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label small fw-bold text-muted">TILE SIZE</label>
+                                        <select name="tile_size" class="form-select font-monospace small">
+                                            <option value="512">512 px</option>
+                                            <option value="1024" selected>1024 px</option>
+                                            <option value="2048">2048 px</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small fw-bold text-muted">OVERLAP</label>
+                                        <input type="number" name="overlap" class="form-control font-monospace small" value="128" step="32" min="0">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-muted">MINIMUM TISSUE TILES</label>
+                                    <input type="number" name="num_tiles" class="form-control fw-bold text-primary" value="10" min="4" max="50">
+                                    <div class="form-text" style="font-size: 0.65rem;">
+                                        Grid expands until finding this many tissue tiles.
+                                    </div>
+                                </div>
+
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="smart_filter" id="smartFilter" checked>
+                                    <label class="form-check-label small fw-bold" for="smartFilter">Smart Tissue Filter</label>
+                                </div>
+
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" name="demo_mode" id="demoMode">
+                                    <label class="form-check-label small fw-bold text-success" for="demoMode">
+                                        <i class="bi bi-lightning-charge-fill"></i> Quick Demo Mode
+                                    </label>
+                                </div>
+                                <div class="text-muted small fst-italic" style="font-size: 0.7rem;">
+                                    Forces start at first detected high-contrast tissue area. Overrides center search.
+                                </div>
+
+                            </div>
+
+                            
+
+                            <button type="submit" class="btn btn-warning w-100 fw-bold text-dark py-2 shadow-sm">
+                                <i class="bi bi-bullseye me-2"></i>START SUPER-PRO SCAN
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="col-md-8">
+                    <div id="wsiPlaceholder" class="panel text-center min-vh-50 d-flex flex-column justify-content-center align-items-center bg-white border-0">
+                        <i class="bi bi-layers display-1 text-light mb-3"></i>
+                        <h4 class="text-muted fw-light">Ready to Analyze</h4>
+                    </div>
+                    
+                    <div id="wsiResults" class="d-none">
+                        <div class="card mb-4 border-0 shadow-sm">
+                            <div class="card-header bg-white">
+                                <h6 class="fw-bold text-success m-0"><i class="bi bi-map me-2"></i>Context Reconstruction</h6>
+                            </div>
+                            <div class="card-body bg-light text-center">
+                                <p class="small text-muted mb-2">Full scanned area (Tissue + Context)</p>
+                                <div id="stitchedContainer">
+                                    </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h6 class="fw-bold text-muted mb-3">
+                                <i class="bi bi-grid-3x3 me-2"></i>Confirmed Detections 
+                                <span class="badge bg-secondary ms-2" id="tileCountBadge">0</span>
+                            </h6>
+                            <div id="wsiGallery" class="d-flex flex-wrap gap-3 justify-content-center">
+                                </div>
+                        </div>
+                    </div>
+
+                    
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade" id="browserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light py-2">
+                <h6 class="modal-title fw-bold text-dark">
+                    <i class="bi bi-folder2-open me-2 text-primary"></i>Select Folder
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="bg-white p-2 border-bottom d-flex align-items-center gap-2 sticky-top">
+                    <button class="btn btn-sm btn-light border" id="browserBackBtn" title="Go Up">
+                        <i class="bi bi-arrow-90deg-up"></i>
+                    </button>
+                    <input type="text" class="form-control form-control-sm font-monospace border-0 bg-light" id="browserCurrentPath" readonly>
+                </div>
+                <div class="list-group list-group-flush" id="browserList">
+                    </div>
+            </div>
+            <div class="modal-footer py-1 bg-light">
+                <button type="button" class="btn btn-primary btn-sm w-100" id="browserSelectBtn">
+                    <i class="bi bi-check-lg me-1"></i> Select Current Folder
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // ================== CHART CONFIGURATION ==================
+    const ctx = document.getElementById('metricsChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Dice Score',
+                    data: [],
+                    borderColor: '#0dcaf0', 
+                    backgroundColor: 'rgba(13, 202, 240, 0.05)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: false
+                },
+                {
+                    label: 'IoU',
+                    data: [],
+                    borderColor: '#198754', 
+                    backgroundColor: 'rgba(25, 135, 84, 0.05)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: false
+                },
+                {
+                    label: 'Train Loss',
+                    data: [],
+                    borderColor: '#dc3545', 
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    tension: 0.3,
+                    yAxisID: 'y1',
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                y: { beginAtZero: true, max: 1.0, title: {display: true, text: 'Metrics (0-1)'} },
+                y1: { position: 'right', beginAtZero: true, title: {display: true, text: 'Loss'} }
+            }
+        }
+    });
+
+    // ================== FILE BROWSER LOGIC ==================
+    let currentTargetInputId = null;
+    const browserModal = new bootstrap.Modal(document.getElementById('browserModal'));
+    const browserList = document.getElementById('browserList');
+    const pathDisplay = document.getElementById('browserCurrentPath');
+    
+    window.openBrowser = function(inputId) {
+        currentTargetInputId = inputId;
+        const currentVal = document.getElementById(inputId).value;
+        loadPath(currentVal || "");
+        browserModal.show();
+    };
+
+    async function loadPath(path) {
+        try {
+            const res = await fetch(`/browse/?path=${encodeURIComponent(path)}`);
+            const data = await res.json();
+            
+            if(data.error) {
+                alert("Cannot access folder: " + data.error);
+                return;
+            }
+
+            pathDisplay.value = data.current_path;
+            
+            document.getElementById('browserBackBtn').onclick = () => loadPath(data.parent_path);
+            
+            document.getElementById('browserSelectBtn').onclick = () => {
+                document.getElementById(currentTargetInputId).value = data.current_path;
+                browserModal.hide();
+            };
+
+            browserList.innerHTML = '';
+            if(data.dirs.length === 0) {
+                browserList.innerHTML = '<div class="p-4 text-center text-muted small">This folder contains no subdirectories.<br>Click "Select Current Folder" to choose it.</div>';
+            }
+            
+            data.dirs.forEach(dir => {
+                const btn = document.createElement('button');
+                btn.className = 'list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 folder-item';
+                btn.innerHTML = `<i class="bi bi-folder-fill text-warning fs-5"></i> <span class="font-monospace small text-dark">${dir.name}</span>`;
+                btn.onclick = () => loadPath(dir.path);
+                browserList.appendChild(btn);
+            });
+
+        } catch(err) {
+            console.error("Browser Error:", err);
+            alert("Connection error with backend file browser.");
+        }
+    }
+
+    // ================== TRAINING LOGIC ==================
+    const trainForm = document.getElementById('trainForm');
+    const trainStatusBox = document.getElementById('trainStatusBox');
+    const btnTrain = document.getElementById('btnTrain');
+
+    trainForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        btnTrain.disabled = true;
+        btnTrain.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Training...';
+        trainStatusBox.classList.remove('d-none');
+        
+        await fetch('/seg/train/', { method: 'POST', body: new FormData(trainForm) });
+        
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch('/seg/status');
+                const data = await res.json();
+                
+                if(data.history && data.history.length > 0) {
+                    chart.data.labels = data.history.map(h => h.epoch);
+                    chart.data.datasets[0].data = data.history.map(h => h.dice);
+                    chart.data.datasets[1].data = data.history.map(h => h.iou);
+                    chart.data.datasets[2].data = data.history.map(h => h.loss);
+                    chart.update();
+                    
+                    document.getElementById('epochVal').innerText = data.epoch;
+                    document.getElementById('lossVal').innerText = data.loss.toFixed(4);
+                    document.getElementById('diceVal').innerText = data.dice.toFixed(4);
+
+                    if (data.iou !== undefined) {
+                        document.getElementById('iouVal').innerText = data.iou.toFixed(4);
+                    }
+                }
+
+                if(!data.is_training && data.epoch > 0) {
+                    clearInterval(interval);
+                    btnTrain.disabled = false;
+                    btnTrain.innerHTML = '<i class="bi bi-play-fill me-1"></i> Start Training';
+                    alert("Training Finished! Graph preserved.");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }, 2000);
+    });
+
+    // ================== MODEL UPLOAD LOGIC ==================
+    document.getElementById('uploadModelForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = e.target.querySelector('button');
+        const originalText = btn.innerText;
+        btn.disabled = true; 
+        btn.innerText = "Uploading...";
+        
+        const res = await fetch('/seg/upload_model/', { method: 'POST', body: new FormData(e.target) });
+        if(res.ok) {
+            window.location.reload(); 
+        } else {
+            alert("Upload failed. Check file format.");
+            btn.disabled = false; 
+            btn.innerText = originalText;
+        }
+    });
+
+    // ================== INFERENCE LOGIC ==================
+    const inferForm = document.getElementById('inferForm');
+    const inferPlaceholder = document.getElementById('inferPlaceholder');
+    const inferResult = document.getElementById('inferResult');
+
+    inferForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = inferForm.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        
+        btn.disabled = true; 
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
+        
+        try {
+            const res = await fetch('/seg/predict/', { method: 'POST', body: new FormData(inferForm) });
+            const data = await res.json();
+            
+            if(data.error) {
+                alert("Error: " + data.error);
+            } else {
+                inferPlaceholder.classList.add('d-none');
+                inferResult.classList.remove('d-none');
+                
+                document.getElementById('imgOriginal').src = data.original;
+                document.getElementById('imgMask').src = data.mask;
+            }
+        } catch (err) {
+            alert("Connection error.");
+        } finally {
+            btn.disabled = false; 
+            btn.innerHTML = originalText;
+        }
+    });
+
+    // ================== WSI LAB LOGIC (PROFESSIONAL) ==================
+    
+    const wsiForm = document.getElementById('wsiInferForm');
+    const wsiPlaceholder = document.getElementById('wsiPlaceholder');
+    const wsiResults = document.getElementById('wsiResults');
+    const wsiGallery = document.getElementById('wsiGallery');
+const stitchedContainer = document.getElementById('stitchedContainer'); // Note: ID fixed to match HTML
+
+    if(wsiForm) {
+        wsiForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = wsiForm.querySelector('button[type="submit"]');
+            const origText = btn.innerHTML;
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing Region...';
+            
+            try {
+                const formData = new FormData(wsiForm);
+                formData.set('smart_filter', document.getElementById('smartFilter').checked);
+                formData.set('demo_mode', document.getElementById('demoMode').checked);
+                const res = await fetch('/wsi/predict/', { method: 'POST', body: formData });
+                const data = await res.json();
+                
+                if(data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    wsiPlaceholder.classList.add('d-none');
+                    wsiResults.classList.remove('d-none');
+                    
+                    // 1. Display Reconstruction (if exists)
+                    if(data.stitched) {
+                        stitchedContainer.innerHTML = `<img src="${data.stitched}" class="img-fluid rounded shadow" style="max-height: 600px; width: auto;">`;
+                    } else {
+                        stitchedContainer.innerHTML = '<div class="alert alert-warning">No stitched image generated.</div>';
+                    }
+                    
+                    // 2. Display Tile Gallery
+                    wsiGallery.innerHTML = ''; 
+                    
+                    // Update counter (if badge was added to HTML)
+                    const badge = document.getElementById('tileCountBadge');
+                    if(badge) badge.innerText = data.images.length;
+
+                    if(data.images.length === 0) {
+                        wsiGallery.innerHTML = '<div class="alert alert-info w-100">No individual tissue tiles found with current filter settings. Check the global reconstruction above.</div>';
+                    } else {
+                        data.images.forEach(imgUrl => {
+                            const img = document.createElement('img');
+                            img.src = imgUrl;
+                            img.className = 'rounded border shadow-sm';
+                            img.style.height = '150px';
+                            img.style.objectFit = 'cover';
+                            wsiGallery.appendChild(img);
+                        });
+                    }
+                }
+            } catch(err) {
+                alert("Connection error: " + err);
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = origText;
+            }
+        });
+    }
+</script>
+</body>
+</html>

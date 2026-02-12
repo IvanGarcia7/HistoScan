@@ -1,0 +1,162 @@
+:root {
+    --bg-app: #f8fafc;       /* Gris muy claro, casi blanco */
+    --surface: #ffffff;      /* Blanco puro */
+    --primary: #059669;      /* Verde Esmeralda Profesional */
+    --primary-hover: #047857;
+    --primary-light: #d1fae5;
+    --text-main: #1e293b;    /* Gris oscuro, no negro puro */
+    --text-sec: #64748b;     /* Gris medio */
+    --border: #e2e8f0;
+}
+
+body {
+    background-color: var(--bg-app);
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Navbar limpio estilo laboratorio */
+.navbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.navbar-brand {
+    font-weight: 700;
+    color: var(--primary) !important;
+    letter-spacing: -0.5px;
+}
+
+/* Tarjetas */
+.panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px; /* Bordes menos redondeados, más técnicos */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    padding: 2rem;
+    height: 100%;
+}
+
+/* Formulario */
+.form-label-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-control, .form-range {
+    border-color: var(--border);
+}
+
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* Botón Verde */
+.btn-primary-med {
+    background-color: var(--primary);
+    border: 1px solid var(--primary);
+    color: white;
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.btn-primary-med:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+/* Tablas Técnicas */
+.tech-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.tech-table th {
+    text-align: left;
+    color: var(--text-sec);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 2px solid var(--border);
+}
+
+.tech-table td {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-main);
+}
+
+.tech-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Grid de Imagenes */
+.tile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* Más pequeñas para ver más */
+    gap: 0.5rem;
+}
+
+.tile-item {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    background: #eee;
+}
+
+.tile-item img {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: transform 0.2s;
+}
+
+.tile-item:hover img {
+    transform: scale(1.1);
+}
+
+/* ... tu css anterior ... */
+
+/* Estilos para el hover de descarga */
+.tile-item-link {
+    text-decoration: none;
+    display: block;
+}
+
+.tile-item {
+    position: relative; /* Necesario para posicionar el icono */
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    background: #f1f5f9;
+}
+
+.download-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(5, 150, 105, 0.4); /* Verde semitransparente */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.download-overlay i {
+    color: white;
+    font-size: 1.5rem;
+}
+
+.tile-item:hover .download-overlay {
+    opacity: 1;
+}
+
+.tile-item img {
+    width: 100%;
+    display: block;
+}

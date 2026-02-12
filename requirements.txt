@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+python-multipart
+jinja2
+openslide-python
+numpy
+pandas
+Pillow
+tqdm
+torch
+torchvision
+segmentation-models-pytorch
+albumentations
+matplotlib
